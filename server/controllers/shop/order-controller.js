@@ -1,7 +1,9 @@
-import { payment } from "../../helpers/paypal";
-import Order, { findById, find } from "../../models/Order";
-import { findByIdAndDelete } from "../../models/Cart";
-import { findById as _findById } from "../../models/Product";
+
+
+const paypal = require("../../helpers/paypal");
+const Order = require("../../models/Order");
+const Cart = require("../../models/Cart");
+const Product = require("../../models/Product");
 
 const createOrder = async (req, res) => {
   try {
@@ -49,7 +51,7 @@ const createOrder = async (req, res) => {
       ],
     };
 
-    payment.create(create_payment_json, async (error, paymentInfo) => {
+    paypal.payment.create(create_payment_json, async (error, paymentInfo) => {
       if (error) {
         console.log(error);
 
@@ -99,7 +101,7 @@ const capturePayment = async (req, res) => {
   try {
     const { paymentId, payerId, orderId } = req.body;
 
-    let order = await findById(orderId);
+    let order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({
@@ -114,7 +116,7 @@ const capturePayment = async (req, res) => {
     order.payerId = payerId;
 
     for (let item of order.cartItems) {
-      let product = await _findById(item.productId);
+      let product = await Product.findById(item.productId);
 
       if (!product) {
         return res.status(404).json({
@@ -129,7 +131,7 @@ const capturePayment = async (req, res) => {
     }
 
     const getCartId = order.cartId;
-    await findByIdAndDelete(getCartId);
+    await Cart.findByIdAndDelete(getCartId);
 
     await order.save();
 
@@ -151,7 +153,7 @@ const getAllOrdersByUser = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const orders = await find({ userId });
+    const orders = await Order.find({ userId });
 
     if (!orders.length) {
       return res.status(404).json({
@@ -177,7 +179,7 @@ const getOrderDetails = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const order = await findById(id);
+    const order = await Order.findById(id);
 
     if (!order) {
       return res.status(404).json({
@@ -199,7 +201,7 @@ const getOrderDetails = async (req, res) => {
   }
 };
 
-export default {
+module.exports = {
   createOrder,
   capturePayment,
   getAllOrdersByUser,
